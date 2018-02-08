@@ -25,6 +25,7 @@ int door_direction = 1;
 
 // Define pin connections.
 int cat_detector_pin = 2;
+int red_light_pin = 8;
 
 
 void setup() {
@@ -32,6 +33,8 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     pinMode(cat_detector_pin, INPUT); 
+    pinMode(red_light_pin, OUTPUT);
+    
     // The detection means output going low.
     attachInterrupt(digitalPinToInterrupt(cat_detector_pin), on_cat_detected, FALLING);
 
@@ -64,6 +67,7 @@ void on_cat_detected() {
     OCR1A = 31250; // set 0.5sec timer
     TIMSK1 = bit(OCIE1A); // Set interrupt
     door_moving = true;
+    digitalWrite(red_light_pin, HIGH);
 }
 
 void loop() {
@@ -94,9 +98,13 @@ TIFR1 = bit (OCF2A); // clear any pending interrupt: https://arduino.stackexchan
     Serial.println(TCNT1);
     TIMSK1 = bit(OCIE1A); // Set interrupt
     interrupts();
-}
+} else {
+  digitalWrite(red_light_pin, LOW);
+  }
         }
+        
     }
+    
     delay(20);
 }
 
