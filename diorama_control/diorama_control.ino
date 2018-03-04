@@ -75,7 +75,7 @@ void loop() {
         myStepper.step(door_direction * STEPS_PER_ITERATION);
         stepCount += STEPS_PER_ITERATION;
         Serial.println(stepCount);
-        if (stepCount > .25 * STEPS_PER_REVOLUTION) {
+        if (stepCount >= .5 * STEPS_PER_REVOLUTION) {
             door_moving = false;
             door_direction = -door_direction;
             stepCount = 0;
