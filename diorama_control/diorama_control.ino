@@ -18,7 +18,21 @@ public:
         static const Type CCW = 1 << 1;
     };
 
-    int motion = Motion::NONE;
+    Motion::Type motion = Motion::NONE;
+
+    void move(const Motion::Type & motion) {
+        this->motion = motion;
+        Serial.println("move");
+    }
+
+    void stop() {
+        motion = Motion::NONE;
+        Serial.println("stop");
+    }
+
+    boolean isMoving() const {
+        return Motion::NONE != motion;
+    };
 };
 
 
@@ -32,8 +46,7 @@ Stepper myStepper(STEPS_PER_MOTOR_REVOLUTION, 9, 11, 10, 12);
 int stepCount = 0;
 
 // door motion
-int door_moving = false;
-int door_direction = 1;
+Door door = Door();
 
 // Define pin connections.
 int cat_detector_pin = 2;
@@ -69,36 +82,41 @@ void setup() {
 }
 
 ISR(TIMER1_COMPA_vect) {
-    Serial.println("ISR");
     digitalWrite(LED_BUILTIN, LOW);
     TIMSK1 = 0; // Disable interrupt
-    door_moving = true;
+    door.move(Door::Motion::CCW);
+    Serial.println("TMR");
 }
 
 void on_cat_detected() {
     digitalWrite(LED_BUILTIN, HIGH);
-    //TIMSK1 = 0; // Disable interrupt
-    TCNT1 = 0;
-    OCR1A = 31250; // set 0.5sec timer
-    TIMSK1 = bit(OCIE1A); // Set interrupt
-    door_moving = true;
     digitalWrite(red_light_pin, HIGH);
+    if (! door.isMoving()) {
+        door.move(Door::Motion::CW);
+        //noInterrupts();
+        Serial.println("Cat");
+    }
 }
 
 void loop() {
-    if (door_moving) { 
-        myStepper.step(door_direction * STEPS_PER_ITERATION);
+    if (door.isMoving()) {
+        //myStepper.step(door_direction * STEPS_PER_ITERATION);
+        myStepper.step(door.motion == Door::Motion::CW ? STEPS_PER_ITERATION : -STEPS_PER_ITERATION);
         stepCount += STEPS_PER_ITERATION;
         Serial.println(stepCount);
         if (stepCount >= .5 * STEPS_PER_REVOLUTION) {
-            door_moving = false;
-            door_direction = -door_direction;
+            //door_moving = false;
+            boolean open_reached = (door.motion == Door::Motion::CW);
+            door.stop();
+            //door_direction = -door_direction;
+            
             stepCount = 0;
 
-            if (door_direction < 0) {
+            //if (door_direction < 0) {
+            if (open_reached) {
                 // Start timer.
                 Serial.println("Starting timer");
-                noInterrupts();
+
                 TIMSK1 = 0;
                 TCNT1 = 0;
                 TCCR1A = 0;
@@ -112,10 +130,15 @@ void loop() {
                 OCR1A = 31250; // set 0.5sec timer
                 Serial.println(TCNT1);
                 TIMSK1 = bit(OCIE1A); // Set interrupt
-                interrupts();
+
+                //interrupts();
             } else {
                 digitalWrite(red_light_pin, LOW);
+                //interrupts();
             }
+        } else {
+            // While moving, do not react to cat.
+            //noInterrupts();
         }
     }
     
