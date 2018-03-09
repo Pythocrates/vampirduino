@@ -41,7 +41,7 @@ public:
 const int STEPS_PER_MOTOR_REVOLUTION = 32;  // change this to fit the number of steps per revolution
 const int GEAR_REDUCTION_FACTOR = 64;
 const int STEPS_PER_REVOLUTION = 2048;  // change this to fit the number of steps per revolution
-const int STEPS_PER_ITERATION = 128;
+const int STEPS_PER_ITERATION = 156;
 Stepper myStepper(STEPS_PER_MOTOR_REVOLUTION, 9, 11, 10, 12);
 int stepCount = 0;
 
@@ -84,7 +84,7 @@ void setup() {
 ISR(TIMER1_COMPA_vect) {
     digitalWrite(LED_BUILTIN, LOW);
     TIMSK1 = 0; // Disable interrupt
-    door.move(Door::Motion::CCW);
+    door.move(Door::Motion::CW);
     Serial.println("TMR");
 }
 
@@ -92,7 +92,7 @@ void on_cat_detected() {
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(red_light_pin, HIGH);
     if (! door.isMoving()) {
-        door.move(Door::Motion::CW);
+        door.move(Door::Motion::CCW);
         //noInterrupts();
         Serial.println("Cat");
     }
@@ -104,9 +104,9 @@ void loop() {
         myStepper.step(door.motion == Door::Motion::CW ? STEPS_PER_ITERATION : -STEPS_PER_ITERATION);
         stepCount += STEPS_PER_ITERATION;
         Serial.println(stepCount);
-        if (stepCount >= .5 * STEPS_PER_REVOLUTION) {
+        if (stepCount >= .125 * STEPS_PER_REVOLUTION) {
             //door_moving = false;
-            boolean open_reached = (door.motion == Door::Motion::CW);
+            boolean open_reached = (door.motion == Door::Motion::CCW);
             door.stop();
             //door_direction = -door_direction;
             
